@@ -14,9 +14,9 @@ import {
   expectProgramDescriptionInList,
   expectSaveSuccessFeedback,
   goToPrograms,
+  gotoProgramsAsAuthenticated,
   hasNonAdminCredentials,
   locators,
-  loginAsAdmin,
   loginAsNonAdmin,
   openEditProgram,
   uniqueName,
@@ -27,8 +27,7 @@ import {
 
 test.describe('DS-2: Edit Existing Program Details', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-    await goToPrograms(page);
+    await gotoProgramsAsAuthenticated(page);
   });
 
   test.describe('Happy paths', () => {

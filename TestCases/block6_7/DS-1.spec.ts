@@ -8,7 +8,7 @@ import {
   expectProgramInList,
   expectProgramNotInList,
   goToPrograms,
-  loginAsAdmin,
+  gotoProgramsAsAuthenticated,
   openNewProgramDialog,
   programRow,
   submitNewProgram,
@@ -22,8 +22,7 @@ import {
 
 test.describe('DS-1: Create New Academic Program', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
-    await goToPrograms(page);
+    await gotoProgramsAsAuthenticated(page);
   });
 
   test.describe('Happy paths', () => {
