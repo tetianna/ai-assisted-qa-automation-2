@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { ElementHandle, Locator, Page } from '@playwright/test';
 import { captureProgramCreate } from './programCreate';
 
 export class NewProgramModal {
@@ -25,6 +25,14 @@ export class NewProgramModal {
   async waitForOpen() {
     await this.dialog.waitFor({ state: 'visible' });
     await this.heading.waitFor({ state: 'visible' });
+  }
+
+  async axeIncludeSelector(): Promise<ElementHandle<SVGElement | HTMLElement>> {
+    const handle = await this.dialog.elementHandle();
+    if (!handle) {
+      throw new Error('New Program modal dialog is not mounted for scoped axe scan');
+    }
+    return handle;
   }
 
   async fillProgramName(name: string) {
