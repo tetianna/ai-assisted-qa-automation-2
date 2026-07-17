@@ -23,6 +23,7 @@ export const locators = {
     heading: (page: Page) => page.getByRole('heading', { name: 'Programs', exact: true }),
     subtitle: (page: Page) => page.getByText('Manage academic programs and semesters'),
     newProgramButton: (page: Page) => page.getByRole('button', { name: '+ New Program' }),
+    emptyState: (page: Page) => page.getByText(/no programs yet|create your first program/i),
     table: (page: Page) => page.getByRole('table'),
     programColumnHeader: (page: Page) => page.getByRole('columnheader', { name: 'Program' }),
     dataRows: (page: Page) => page.getByRole('table').getByRole('row'),
@@ -62,11 +63,24 @@ export const locators = {
   },
 
   programList: {
-    row: (page: Page, name: string, namePattern: RegExp) => page.getByRole('row', { name: namePattern }),
-    editButton: (page: Page, name: string) => page.getByRole('button', { name: `Edit ${name}` }),
-    deleteButton: (page: Page, name: string) => page.getByRole('button', { name: `Delete ${name}` }),
+    row: (page: Page, name: string) =>
+      page.getByRole('table').getByRole('row').filter({
+        has: page.getByText(name, { exact: true }),
+      }),
+    editButton: (page: Page, name: string) =>
+      page.getByRole('button', { name: `Edit ${name}`, exact: true }),
+    deleteButton: (page: Page, name: string) =>
+      page.getByRole('button', { name: `Delete ${name}`, exact: true }),
     programCell: (row: Locator) => row.getByRole('cell').first(),
     actionsCell: (row: Locator) => row.getByRole('cell').last(),
+  },
+
+  toast: {
+    success: (page: Page) =>
+      page
+        .getByRole('alert')
+        .filter({ hasText: /saved|success|updated/i })
+        .or(page.getByText(/successfully saved|program updated|saved successfully/i)),
   },
 };
 
@@ -77,4 +91,23 @@ export const dialogFields = {
   createButton: (dialog: Locator) => dialog.getByRole('button', { name: 'Create', exact: true }),
   saveButton: (dialog: Locator) => dialog.getByRole('button', { name: 'Save' }),
   cancelButton: (dialog: Locator) => dialog.getByRole('button', { name: 'Cancel' }),
+  closeButton: (dialog: Locator) =>
+    dialog
+      .getByRole('button', { name: /close/i })
+      .or(dialog.locator('header, [class*="Modal-header"], [class*="modal-header"]').getByRole('button').first()),
+  aiConfigToggle: (dialog: Locator) =>
+    dialog.getByRole('button', { name: /AI Generation Config/i }),
+  totalProgramHours: (dialog: Locator) => dialog.getByPlaceholder('e.g. 900'),
+  defaultSessionHours: (dialog: Locator) => fieldInputNearLabel(dialog, 'Default Session Hours'),
+  defaultExamHours: (dialog: Locator) => fieldInputNearLabel(dialog, 'Default Exam Hours'),
+  targetAudience: (dialog: Locator) => dialog.getByPlaceholder('e.g. Career changers, no CS background'),
+  focusAreas: (dialog: Locator) =>
+    dialog.getByPlaceholder('e.g. Python, SQL, Machine Learning, Data Visualization'),
 };
+
+function fieldInputNearLabel(dialog: Locator, label: string): Locator {
+  return dialog
+    .getByText(label, { exact: true })
+    .locator('xpath=ancestor::div[.//input][1]//input')
+    .first();
+}

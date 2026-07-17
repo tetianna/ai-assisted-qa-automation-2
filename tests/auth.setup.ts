@@ -2,7 +2,7 @@ import { test as setup, expect } from '@playwright/test';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import { locators } from '../TestCases/block4/helpers/locators';
+import { LoginPage } from '../pages/LoginPage';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -15,14 +15,10 @@ setup('authenticate', async ({ page }) => {
     throw new Error('DIDAXIS_EMAIL and DIDAXIS_PASSWORD must be set in .env');
   }
 
-  await page.goto('https://test.didaxis.studio/login');
-  await expect(locators.login.signInHeading(page)).toBeVisible();
-  await locators.login.email(page).fill(email);
-  await locators.login.password(page).fill(password);
-  await locators.login.signInButton(page).click();
-  await expect(locators.login.dashboardHeading(page)).toBeVisible();
-  await locators.navigation.programsButton(page).click();
-  await page.waitForURL('**/programs');
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+  await expect(loginPage.signInHeading).toBeVisible();
+  await loginPage.signInAndOpenPrograms(email, password);
 
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
