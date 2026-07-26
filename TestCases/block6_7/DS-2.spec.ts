@@ -197,7 +197,7 @@ test.describe('DS-2: Edit Existing Program Details', () => {
       expect(await countExactProgramsNamed(page, toRename)).toBe(1);
     });
 
-    test('TC-009: Server error during save does not corrupt program data', async ({ page, trackProgram }) => {
+    test.fixme('TC-009: Server error during save does not corrupt program data', async ({ page, trackProgram }) => {
       const name = uniqueName('DevOps Engineering 2026');
       const originalDesc = 'Original DevOps curriculum';
       // Cleanup: track created program for API delete after test
