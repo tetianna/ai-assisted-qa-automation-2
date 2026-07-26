@@ -8,6 +8,8 @@
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "codegen": "playwright codegen",
+    "setup:browsers": "playwright install chromium",
+    "postinstall": "playwright install chromium",
     "setup:atlassian-mcp": "node scripts/setup-atlassian-mcp-auth.mjs"
   },
   "repository": {
