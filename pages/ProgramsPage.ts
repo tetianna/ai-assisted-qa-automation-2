@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 import { baseUrl } from './baseUrl';
 import { EditProgramModal } from './EditProgramModal';
 import { NewProgramModal } from './NewProgramModal';
+import { NewSemesterModal } from './NewSemesterModal';
 
 export class ProgramsPage {
   readonly heading: Locator;
@@ -13,6 +14,9 @@ export class ProgramsPage {
   readonly errorMessage: Locator;
   readonly newProgramModal: NewProgramModal;
   readonly editProgramModal: EditProgramModal;
+  readonly newSemesterModal: NewSemesterModal;
+  readonly addSemesterButton: Locator;
+  readonly manageSemestersHint: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Programs', exact: true });
@@ -27,6 +31,9 @@ export class ProgramsPage {
       .or(page.getByText(/error|failed|unable|something went wrong/i));
     this.newProgramModal = new NewProgramModal(page);
     this.editProgramModal = new EditProgramModal(page);
+    this.newSemesterModal = new NewSemesterModal(page);
+    this.addSemesterButton = page.getByRole('button', { name: '+ Semester' });
+    this.manageSemestersHint = page.getByText('Select a program to manage semesters');
   }
 
   async goto() {
@@ -51,6 +58,34 @@ export class ProgramsPage {
 
   editButton(name: string): Locator {
     return this.page.getByRole('button', { name: `Edit ${name}`, exact: true });
+  }
+
+  deleteButton(name: string): Locator {
+    return this.page.getByRole('button', { name: `Delete ${name}`, exact: true });
+  }
+
+  dataRows(): Locator {
+    return this.table.getByRole('row').filter({
+      has: this.page.getByRole('button', { name: /^Edit / }),
+    });
+  }
+
+  async programNameAt(index: number): Promise<string> {
+    const cell = this.dataRows().nth(index).getByRole('cell').first();
+    const text = (await cell.textContent())?.trim() ?? '';
+    return text.split('\n')[0]?.trim() ?? text;
+  }
+
+  async deleteProgram(name: string) {
+    const dialogHandled = new Promise<void>((resolve) => {
+      this.page.once('dialog', async (dialog) => {
+        await dialog.accept();
+        resolve();
+      });
+    });
+
+    await this.deleteButton(name).click();
+    await dialogHandled;
   }
 
   async openEditProgramForm(name: string) {
@@ -93,5 +128,29 @@ export class ProgramsPage {
     const programId = await this.newProgramModal.submitAndCaptureId();
     await this.waitForProgramInList(name);
     return programId;
+  }
+
+  async selectProgramRow(name: string) {
+    await this.programRow(name).click();
+  }
+
+  async openNewSemesterForm() {
+    await this.addSemesterButton.click();
+    await this.newSemesterModal.waitForOpen();
+  }
+
+  async assignSemesterToProgram(
+    programName: string,
+    semesterName: string,
+    startDate: string,
+    endDate: string,
+  ) {
+    await this.selectProgramRow(programName);
+    await this.openNewSemesterForm();
+    await this.newSemesterModal.createSemester(semesterName, startDate, endDate);
+  }
+
+  semesterLabel(name: string): Locator {
+    return this.page.getByText(name, { exact: true });
   }
 }
