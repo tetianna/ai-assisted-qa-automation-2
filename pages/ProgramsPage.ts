@@ -17,6 +17,8 @@ export class ProgramsPage {
   readonly newSemesterModal: NewSemesterModal;
   readonly addSemesterButton: Locator;
   readonly manageSemestersHint: Locator;
+  readonly searchBox: Locator;
+  readonly successToast: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Programs', exact: true });
@@ -34,6 +36,11 @@ export class ProgramsPage {
     this.newSemesterModal = new NewSemesterModal(page);
     this.addSemesterButton = page.getByRole('button', { name: '+ Semester' });
     this.manageSemestersHint = page.getByText('Select a program to manage semesters');
+    this.searchBox = page.getByRole('searchbox');
+    this.successToast = page
+      .getByRole('alert')
+      .filter({ hasText: /deleted|removed|success/i })
+      .or(page.getByText(/successfully deleted|program deleted|removed successfully/i));
   }
 
   async goto() {
@@ -44,8 +51,7 @@ export class ProgramsPage {
   async waitForLoaded() {
     await this.heading.waitFor({ state: 'visible' });
     await this.subtitle.waitFor({ state: 'visible' });
-    const list = this.table.or(this.emptyState);
-    await list.first().waitFor({ state: 'visible', timeout: 15_000 });
+    await this.table.or(this.emptyState).waitFor({ state: 'visible', timeout: 15_000 });
     if (await this.table.isVisible()) {
       await this.programColumnHeader.waitFor({ state: 'visible' });
     }
@@ -76,16 +82,51 @@ export class ProgramsPage {
     return text.split('\n')[0]?.trim() ?? text;
   }
 
-  async deleteProgram(name: string) {
+  async clickDeleteAndHandleDialog(
+    name: string,
+    action: 'accept' | 'dismiss',
+  ): Promise<string> {
+    await this.programRow(name).scrollIntoViewIfNeeded();
+
+    let message = '';
     const dialogHandled = new Promise<void>((resolve) => {
       this.page.once('dialog', async (dialog) => {
-        await dialog.accept();
+        message = dialog.message();
+        if (action === 'accept') {
+          await dialog.accept();
+        } else {
+          await dialog.dismiss();
+        }
         resolve();
       });
     });
 
     await this.deleteButton(name).click();
     await dialogHandled;
+    return message;
+  }
+
+  async deleteProgram(name: string) {
+    await this.clickDeleteAndHandleDialog(name, 'accept');
+  }
+
+  async deleteProgramAndWaitForRemoval(name: string) {
+    await this.deleteProgram(name);
+    await this.exactProgramNameCell(name).waitFor({ state: 'detached', timeout: 15_000 });
+  }
+
+  async getProgramListNames(): Promise<string[]> {
+    const editButtons = this.dataRows().getByRole('button', { name: /^Edit / });
+    const count = await editButtons.count();
+    const names: string[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const accessibleName = await editButtons.nth(i).evaluate(
+        (el) => el.getAttribute('aria-label') ?? el.textContent ?? '',
+      );
+      const name = accessibleName.replace(/^Edit\s+/, '').trim();
+      if (name) names.push(name);
+    }
+    return names;
   }
 
   async openEditProgramForm(name: string) {
@@ -104,7 +145,7 @@ export class ProgramsPage {
   }
 
   programNameCell(name: string): Locator {
-    return this.exactProgramNameCell(name).first();
+    return this.exactProgramNameCell(name);
   }
 
   rowWithText(name: string, text: string): Locator {

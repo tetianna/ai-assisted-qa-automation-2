@@ -1,7 +1,7 @@
 // Playwright tests derived from features/DS-5.feature
-import { test, expect } from '../../fixtures/cleanup.fixture';
-import { ProgramsPage } from '../../pages/ProgramsPage';
-import { uniqueName } from '../block4/helpers/didaxis';
+import { test, expect } from '../fixtures/cleanup.fixture';
+import { ProgramsPage } from '../pages/ProgramsPage';
+import { uniqueName } from '../TestCases/block4/helpers/didaxis';
 
 test.describe('DS-5: Program list filtering and display', () => {
   test.beforeEach(async ({ page }) => {
