@@ -5,6 +5,7 @@ export class AppNavigation {
   readonly programsButton: Locator;
   readonly calendarButton: Locator;
   readonly dashboardButton: Locator;
+  readonly settingsButton: Locator;
   readonly signOutButton: Locator;
 
   constructor(private readonly page: Page) {
@@ -12,6 +13,7 @@ export class AppNavigation {
     this.programsButton = this.bar.getByRole('button', { name: 'Programs' });
     this.calendarButton = this.bar.getByRole('button', { name: 'Calendar' });
     this.dashboardButton = this.bar.getByRole('button', { name: 'Dashboard' });
+    this.settingsButton = this.bar.getByRole('button', { name: 'Settings' });
     this.signOutButton = this.bar.getByRole('button', { name: 'Sign out' });
   }
 
@@ -28,5 +30,10 @@ export class AppNavigation {
   async openDashboard() {
     await this.dashboardButton.click();
     await this.page.waitForURL(/\/(?:$|\?)/);
+  }
+
+  async openSettings() {
+    await this.settingsButton.click();
+    await this.page.waitForURL('**/settings');
   }
 }
