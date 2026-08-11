@@ -8,6 +8,7 @@ export class NewSemesterModal {
   readonly endDateInput: Locator;
   readonly createButton: Locator;
   readonly cancelButton: Locator;
+  readonly validationError: Locator;
 
   constructor(private readonly page: Page) {
     this.dialog = page.getByRole('dialog', { name: 'New Semester' });
@@ -17,6 +18,9 @@ export class NewSemesterModal {
     this.endDateInput = this.dialog.getByLabel('End Date');
     this.createButton = this.dialog.getByRole('button', { name: 'Create Semester' });
     this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
+    this.validationError = this.dialog.getByText(
+      /invalid|required|end date|start date|before|after|failed|too long|maximum/i,
+    );
   }
 
   async waitForOpen() {
@@ -36,6 +40,10 @@ export class NewSemesterModal {
     await this.endDateInput.fill(date);
   }
 
+  async clickCreate() {
+    await this.createButton.click();
+  }
+
   async create() {
     await this.createButton.click();
     await this.dialog.waitFor({ state: 'hidden', timeout: 15_000 });
@@ -46,5 +54,10 @@ export class NewSemesterModal {
     await this.fillStartDate(startDate);
     await this.fillEndDate(endDate);
     await this.create();
+  }
+
+  async cancel() {
+    await this.cancelButton.click();
+    await this.dialog.waitFor({ state: 'hidden' });
   }
 }
