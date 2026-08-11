@@ -129,6 +129,25 @@ export class ProgramsPage {
     return names;
   }
 
+  /** Row index among tbody rows; avoids scanning the full list over the network. */
+  async getProgramRowIndex(name: string): Promise<number> {
+    const row = this.programRow(name);
+    await row.waitFor({ state: 'visible', timeout: 15_000 });
+    return row.evaluate((element) => {
+      const body = element.closest('tbody');
+      if (!body) return -1;
+      return Array.from(body.querySelectorAll('tr')).indexOf(element as HTMLTableRowElement);
+    });
+  }
+
+  async hasSearchFilter(): Promise<boolean> {
+    return (await this.searchBox.count()) > 0;
+  }
+
+  async fillSearch(query: string): Promise<void> {
+    await this.searchBox.fill(query);
+  }
+
   async openEditProgramForm(name: string) {
     await this.editButton(name).click();
     await this.editProgramModal.waitForOpen();
