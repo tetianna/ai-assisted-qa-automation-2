@@ -8,6 +8,21 @@ alwaysApply: false
 
 Full standard for specs under `tests/**`. Prefer patterns already in this repo; where a section has no in-repo example yet, the ✅ block is **advised**.
 
+## Refusals (hard stops)
+
+The agent must **refuse** these requests — stop, explain the conflict, and do not apply a workaround:
+
+| Refuse | Conflict |
+|--------|----------|
+| Weakening, deleting, or skipping an assertion so a test passes | Masks real failure; green via weakened asserts is a defect, not a fix |
+| Self-healing or patching tests when triage classified the failure as a **real app bug** | Heal is for locator drift only; route to bug-reporter or human confirmation |
+| Replacing a role-based locator with CSS or XPath | Violates locator standard; fix the accessible name/scope, not the selector style |
+| Adding or keeping `waitForTimeout` | Fixed sleeps cause flake; use web-first `expect` on locators |
+| Hardcoding credentials, tokens, or API keys in specs, POMs, or config | Secrets belong in env/secrets; hardcoded values leak and break environments |
+| Using TypeScript `any` (or untyped escape hatches) in test or POM code | Erases compile-time safety; use proper types or narrow unknowns |
+
+On refusal: state which rule blocks the action, cite triage/classification or the convention section if relevant, and propose the allowed path (e.g. POM locator fix, Jira bug, env var).
+
 ## 1. Locators
 
 **Standard:** Role/label first; `getByTestId` escape hatch only (comment why); never CSS/XPath; disambiguate with `.filter({ hasText })`, not `.first()`.
