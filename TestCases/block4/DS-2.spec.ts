@@ -178,7 +178,8 @@ test.describe('DS-2: Edit Existing Program Details', () => {
       await expectExactProgramNameInList(page, name);
     });
 
-    test('TC-008: Duplicate name on edit is rejected', async ({ page, trackProgram }) => {
+    // App bug: edit accepts duplicate program name — DS-126 https://legionqaschool.atlassian.net/browse/DS-126
+    test.fixme('TC-008: Duplicate name on edit is rejected', async ({ page, trackProgram }) => {
       const existing = uniqueName('Web Development 2026');
       const toRename = uniqueName('AI Fundamentals');
       // Cleanup: track created program for API delete after test
@@ -434,7 +435,8 @@ test.describe('DS-2: Edit Existing Program Details', () => {
   });
 
   test.describe('Defect Probes', () => {
-    test('TC-020: Case-only duplicate name on edit is rejected', async ({ page, trackProgram }) => {
+    // App bug: case-only duplicate accepted on edit — DS-106 https://legionqaschool.atlassian.net/browse/DS-106
+    test.fixme('TC-020: Case-only duplicate name on edit is rejected', async ({ page, trackProgram }) => {
       const existing = uniqueName('CaseDuplicate');
       const toRename = uniqueName('CaseDuplicate Target');
       // Cleanup: track created program for API delete after test

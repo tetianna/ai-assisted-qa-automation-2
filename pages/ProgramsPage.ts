@@ -116,17 +116,17 @@ export class ProgramsPage {
   }
 
   async getProgramListNames(): Promise<string[]> {
-    const editButtons = this.dataRows().getByRole('button', { name: /^Edit / });
-    const count = await editButtons.count();
-    const names: string[] = [];
-    for (let i = 0; i < count; i += 1) {
-      const accessibleName = await editButtons.nth(i).evaluate(
-        (el) => el.getAttribute('aria-label') ?? el.textContent ?? '',
-      );
-      const name = accessibleName.replace(/^Edit\s+/, '').trim();
-      if (name) names.push(name);
-    }
-    return names;
+    return await this.dataRows().evaluateAll((rows) => {
+      const names: string[] = [];
+      for (const row of rows) {
+        const btn = row.querySelector('button[aria-label^="Edit "]');
+        if (!btn) continue;
+        const label = btn.getAttribute('aria-label') ?? btn.textContent ?? '';
+        const name = label.replace(/^Edit\s+/, '').trim();
+        if (name) names.push(name);
+      }
+      return names;
+    });
   }
 
   async openEditProgramForm(name: string) {
