@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/enforce-generation-gate.sh",
+        "matcher": "tests/",
+        "failClosed": true
+      }
+    ]
+  }
+}
