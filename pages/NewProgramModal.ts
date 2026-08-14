@@ -16,7 +16,7 @@ export class NewProgramModal {
     this.programNameInput = this.dialog.getByRole('textbox', { name: 'Program Name' });
     this.descriptionInput = this.dialog.getByRole('textbox', { name: 'Description' });
     this.createButton = this.dialog.getByRole('button', { name: 'Create', exact: true });
-    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel1' });
+    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
     this.nameValidationError = this.dialog.getByText(
       /already exists|duplicate|unique|invalid|required|too long|maximum/i,
     );
