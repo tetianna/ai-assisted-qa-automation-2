@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+import { extractProgramId, getCleanupApiToken } from './program-api';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -12,27 +13,9 @@ type CleanupFixtures = {
   trackUser: TrackUser;
 };
 
-let cachedLoginToken: string | null = null;
-
 function didaxisBaseUrl(): string {
   const url = process.env.DIDAXIS_URL || 'https://test.didaxis.studio';
   return url.replace(/\/$/, '');
-}
-
-function extractAuthToken(body: Record<string, unknown>): string | undefined {
-  const data = body.data as Record<string, unknown> | undefined;
-  return (
-    (body.token as string | undefined) ??
-    (data?.token as string | undefined) ??
-    (data?.access_token as string | undefined) ??
-    (body.accessToken as string | undefined) ??
-    (body.access_token as string | undefined)
-  );
-}
-
-function extractProgramId(body: Record<string, unknown>): string | undefined {
-  const data = body.data as Record<string, unknown> | undefined;
-  return (data?.id as string | undefined) ?? (body.id as string | undefined);
 }
 
 function extractUserId(body: Record<string, unknown>): string | undefined {
@@ -46,37 +29,12 @@ function extractUserId(body: Record<string, unknown>): string | undefined {
 }
 
 async function getAuthToken(): Promise<string> {
-  const apiToken = process.env.DIDAXIS_API_TOKEN;
-  if (apiToken) return apiToken;
-
-  if (cachedLoginToken) return cachedLoginToken;
-
-  const email = process.env.DIDAXIS_EMAIL;
-  const password = process.env.DIDAXIS_PASSWORD;
-  if (!email || !password) {
+  const token = await getCleanupApiToken();
+  if (!token) {
     throw new Error(
       'Set DIDAXIS_API_TOKEN or DIDAXIS_EMAIL/DIDAXIS_PASSWORD in .env for program cleanup',
     );
   }
-
-  const baseUrl = didaxisBaseUrl();
-  const res = await fetch(`${baseUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Didaxis login failed for cleanup: HTTP ${res.status} ${await res.text()}`);
-  }
-
-  const body = (await res.json()) as Record<string, unknown>;
-  const token = extractAuthToken(body);
-  if (!token) {
-    throw new Error('Didaxis login succeeded but no auth token was returned');
-  }
-
-  cachedLoginToken = token;
   return token;
 }
 

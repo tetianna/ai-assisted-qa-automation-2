@@ -9,6 +9,7 @@ node_modules/
 /playwright/.auth/
 
 .env
+.eval/session.json
 .cursor/mcp.json
 .playwright-mcp/
 .playwright-report/

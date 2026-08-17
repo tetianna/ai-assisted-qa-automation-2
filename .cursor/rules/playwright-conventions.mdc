@@ -115,21 +115,51 @@ test.beforeEach(async ({ page }) => {
 
 ## 5. Test data
 
-**Standard:** Unique data with `uniqueName()` / `Date.now()`; every test cleans up after itself via `trackProgram`.
+**Standard:** Unique records + self-cleanup (`uniqueName()` / `trackProgram`). Happy-path structured data from Faker factories under `test-data/factories/`. Curated invalid inputs in static `.ts` files (not Faker). Secrets and URLs from `process.env`. Repeated paths and UI/API messages from enums.
 
 ```typescript
-// ✅ Good — from tests/ds1-create-program.spec.ts + cleanup fixture
-const programName = uniqueName("Web Development 2026");
-await programsPage.createProgram(programName, trackProgram, description);
+// ✅ Good — factory for happy-path data (test-data/factories/program.ts)
+import { programFactory } from "../test-data/factories/program";
+
+const program = programFactory();
+await programsPage.createProgram(program.name, trackProgram, program.description);
 ```
 
 ```typescript
 // ❌ Bad
 const programName = "Web Development 2026"; // shared, collisions
-// create program and leave it in the environment
+await page.goto("https://test.didaxis.studio/programs"); // hardcoded URL
+await expect(page.getByText("Program created successfully!!!")).toBeVisible(); // invented copy
 ```
 
-**Why:** Prevents cross-test collisions and polluted Didaxis data that makes later runs fail for unrelated reasons.
+**Factories (happy path):** `test-data/factories/*.ts`. Example:
+
+```typescript
+import { faker } from "@faker-js/faker";
+
+export type ProgramInput = {
+  name: string;
+  description: string;
+};
+
+export function programFactory(overrides: Partial<ProgramInput> = {}): ProgramInput {
+  return {
+    name: `${faker.commerce.department()} ${Date.now()}`,
+    description: faker.lorem.sentence(),
+    ...overrides,
+  };
+}
+```
+
+**Invalid sets:** static files such as `test-data/invalid/program-names.ts` — empty, whitespace, over-max length. Do not generate invalid data with Faker.
+
+**Env:** `process.env.DIDAXIS_URL`, `DIDAXIS_EMAIL`, `DIDAXIS_PASSWORD`, `DIDAXIS_API_TOKEN` (never literals).
+
+**Enums:** when the same path or message appears in 2+ places (e.g. `Routes.Programs = "/programs"`).
+
+Creating a program and deleting it via `trackProgram` is **not** shared-state mutation — keep the importance tag (`@smoke` / `@sanity` / `@regression` / `@api` / `@e2e`). Do not add a manual `afterAll` for that; the cleanup fixture handles it.
+
+**Why:** Prevents collisions, leaked secrets, invented copy, and polluted Didaxis data.
 
 ## 6. API testing
 
@@ -157,7 +187,7 @@ const res = await fetch("https://hardcoded-host/api/programs", {
 
 ## 7. Network mocking
 
-**Standard:** `page.route` / `fulfill` (or abort) for **500** / **503** / **timeout** / empty / malformed; never mock the endpoint under test; observe real UI copy first; one tag per test.
+**Standard:** `page.route` / `fulfill` (or abort) for **500** / **503** / **timeout** / empty / malformed; never mock the endpoint under test; observe real UI copy first; exactly one tag per test (`@api` for mock/contract cases).
 
 ```typescript
 // ✅ Good — advised shape (repo has abort-style TC-012; prefer fulfill + narrow URL)
@@ -228,7 +258,7 @@ await expect(page).toHaveScreenshot(); // blanket visual by default
 
 ## 10. Anti-flake
 
-**Standard:** CI-only retries (max 2); isolation; `page.clock` for relative time; pinned `locale` / `timezoneId`; never `workers: 1`.
+**Standard:** CI-only retries (max 2); isolation; `page.clock` for relative time; pinned `locale` / `timezoneId`; never `workers: 1` except `@destructive` (`npm run test:destructive`).
 
 ```typescript
 // ✅ Good — config retries already in playwright.config.ts; clock advised (no in-repo clock yet)
@@ -239,12 +269,66 @@ await page.clock.install({ time: new Date("2026-08-04T18:00:00Z") });
 ```typescript
 // ❌ Bad
 // retries: 5
-// workers: 1
+// workers: 1  // only allowed for npm run test:destructive
 const label = `Updated ${new Date().toLocaleString()}`; // wall-clock drift local vs CI
 let sharedProgramName = ""; // mutable state across tests
 ```
 
 **Why:** Prevents hidden flake, serial bottlenecks, and date/time assertions that pass locally and fail in CI. *(Pin `locale` + `timezoneId` in config once chosen — not set yet.)*
+
+## 11. Tags
+
+**Standard:** Exactly **one** tag per `test()` — never on `describe`. Allowed values only:
+
+| Tag | When |
+|-----|------|
+| `@smoke` | Critical path that must pass to ship |
+| `@sanity` | Fast confidence after a build or deploy |
+| `@regression` | Full functional coverage |
+| `@api` | Contract checks, `request` helpers, or network-mocked UI |
+| `@e2e` | Cross-page user journey |
+| `@destructive` | Mutates **shared/global** state (locale, roles, flags, settings) |
+
+`@destructive` is **only** for shared/global mutation and **must run serially** (`npm run test:destructive` → `--workers=1`). A test that creates records and cleans up **only its own data** (`trackProgram`) keeps its importance tag — do **not** retag it `@destructive`.
+
+Any test that mutates shared state **must** revert it in `afterEach` or `afterAll` (restore locale/role/flag/setting). Missing revert is a defect.
+
+```typescript
+// ✅ Good
+test.describe("org locale", () => {
+  let originalLocale: string;
+
+  test.beforeEach(async ({ page }) => {
+    originalLocale = await settingsPage.readLocale();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await settingsPage.setLocale(originalLocale);
+  });
+
+  test("TC-001 — switching locale updates labels", { tag: "@destructive" }, async ({
+    page,
+  }) => {
+    await settingsPage.setLocale("fr");
+    await expect(programsPage.heading).toHaveText(/programmes/i);
+  });
+});
+```
+
+```typescript
+// ❌ Bad
+test.describe("programs @regression", () => { /* tag on describe */ });
+test("creates a program", { tag: ["@smoke", "@e2e"] }, async () => { /* two tags */ });
+test("creates a program", { tag: "@destructive" }, async () => {
+  // own program + trackProgram — this is not shared-state mutation
+});
+test("changes locale", { tag: "@destructive" }, async () => {
+  await settingsPage.setLocale("fr");
+  // no afterEach revert — leaves the env dirty
+});
+```
+
+**Why:** Precise CI filtering (`npm run test:smoke`, …) without parallel tests clobbering org-wide settings.
 
 ---
 
@@ -256,9 +340,12 @@ let sharedProgramName = ""; // mutable state across tests
 | Wait with `expect(locator).toBeVisible()` | Use `waitForTimeout` or `expect(await isVisible())` |
 | Put locators and actions in POMs | Inline locators or `expect` inside POMs |
 | Rely on setup `storageState` | UI-login before every feature test |
-| `uniqueName()` + `trackProgram` | Fixed names or leave programs behind |
+| `uniqueName()` / factories + `trackProgram` | Fixed names or leave programs behind |
+| Faker factories; static invalid sets; env; enums | Hardcoded URLs, secrets, or invented copy |
+| One tag: `@smoke` / `@sanity` / `@regression` / `@api` / `@e2e` / `@destructive` | Tags on `describe`; multiple tags; `@destructive` for self-cleaned data |
+| Revert shared state in `afterEach` / `afterAll` | Leave locale, roles, flags, or settings changed |
 | Prefer `request` for API/contract checks | Hardcode tokens or delete foreign data |
 | Narrow `page.route` + observed UI copy | Mock the endpoint under test or invent strings |
 | Axe `wcag2a`/`wcag2aa` + keyboard check | `.disableRules()` to go green |
 | `expect.soft` for multi-checks; visual sparingly | Hard-stop every check; screenshot everything |
-| CI retries ≤2, isolate, `page.clock`, pin locale/TZ | Raise retries, `workers: 1`, wall-clock dates |
+| CI retries ≤2, isolate, `page.clock`, pin locale/TZ | Raise retries; `workers: 1` except `@destructive` |

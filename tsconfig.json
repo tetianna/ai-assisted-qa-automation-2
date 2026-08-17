@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["pages/**/*.ts", "tests/**/*.ts", "TestCases/block4/**/*.ts", "TestCases/block6_7/**/*.ts", "fixtures/**/*.ts"],
+  "include": ["TestCases/**", "tests/**", "pages/**", "fixtures/**", "test-data/**"],
   "exclude": ["dist", "node_modules", "playwright.config.ts"]
 }

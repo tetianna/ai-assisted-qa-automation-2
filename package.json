@@ -7,10 +7,16 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
+    "test:smoke": "playwright test --project=chromium --grep @smoke",
+    "test:sanity": "playwright test --project=chromium --grep @sanity",
+    "test:regression": "playwright test --project=chromium --grep @regression",
+    "test:api": "playwright test --project=chromium --grep @api",
+    "test:e2e": "playwright test --project=chromium --grep @e2e",
+    "test:destructive": "playwright test --project=chromium --grep @destructive --workers=1",
     "codegen": "playwright codegen",
     "setup:browsers": "playwright install chromium",
     "postinstall": "playwright install chromium",
-    "setup:atlassian-mcp": "node scripts/setup-atlassian-mcp-auth.mjs"
+    "eval-report": "node scripts/write-eval-report.mjs",
   },
   "repository": {
     "type": "git",
@@ -28,7 +34,8 @@
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@types/node": "^25.9.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "@faker-js/faker": "^10.6.0"
   },
   "dependencies": {
     "dotenv": "^17.4.2"

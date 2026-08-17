@@ -11,7 +11,7 @@ const authFile = path.join(__dirname, 'playwright/.auth/user.json');
  */
 export default defineConfig({
   testDir: '.',
-  testMatch: ['tests/**/*.spec.ts', 'TestCases/block4/**/*.spec.ts', 'TestCases/block6_7/**/*.spec.ts', 'TestCases/block10/**/*.spec.ts'],
+  testMatch: ['TestCases/**/*.spec.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
