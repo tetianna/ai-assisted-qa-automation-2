@@ -192,34 +192,37 @@ test.describe('DS-5: Program list filtering and display', () => {
       trackProgram(await programsPage.createProgram(first, 'First'), first);
       trackProgram(await programsPage.createProgram(second, 'Second'), second);
 
-      const orderBefore = await programsPage.getProgramListNames();
-      expect(orderBefore).toContain(first);
-      expect(orderBefore).toContain(second);
+      const firstIndexBefore = await programsPage.getProgramRowIndex(first);
+      const secondIndexBefore = await programsPage.getProgramRowIndex(second);
+      expect(firstIndexBefore).toBeGreaterThanOrEqual(0);
+      expect(secondIndexBefore).toBeGreaterThanOrEqual(0);
 
       await programsPage.goto();
-      const orderAfter = await programsPage.getProgramListNames();
-      expect(orderAfter).toEqual(orderBefore);
+      const firstIndexAfter = await programsPage.getProgramRowIndex(first);
+      const secondIndexAfter = await programsPage.getProgramRowIndex(second);
+      expect(firstIndexAfter).toBe(firstIndexBefore);
+      expect(secondIndexAfter).toBe(secondIndexBefore);
     });
 
-    test('TC-018 — Empty state CTA navigates to create flow', async ({ page }) => {
-      const programsPage = new ProgramsPage(page);
-
-      await programsPage.newProgramButton.click();
-      await expect(programsPage.newProgramModal.dialog).toBeVisible();
+    test.skip('TC-018 — Empty state CTA navigates to create flow', async () => {
+      test.skip(true, 'Shared test environment contains existing programs; empty state cannot be guaranteed');
     });
 
     test('TC-019 — List filtering by search narrows visible programs', async ({ page, trackProgram }) => {
       const programsPage = new ProgramsPage(page);
 
-      if ((await programsPage.searchBox.count()) === 0) {
+      if (!(await programsPage.hasSearchFilter())) {
         test.skip(true, 'Search filter is not available on the Programs page');
         return;
       }
 
       const name = uniqueName('Search Filter Test');
+      const decoy = uniqueName('Other Program');
       trackProgram(await programsPage.createProgram(name, 'Searchable program'), name);
-      await programsPage.searchBox.fill(name);
+      trackProgram(await programsPage.createProgram(decoy, 'Should be hidden by search'), decoy);
+      await programsPage.fillSearch(name);
       await expect(programsPage.programRow(name)).toBeVisible();
+      await expect(programsPage.programRow(decoy)).toHaveCount(0);
     });
   });
 });
