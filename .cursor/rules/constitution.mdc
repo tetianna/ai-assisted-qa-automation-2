@@ -1,0 +1,83 @@
+---
+description: Always-on Playwright constitution - MUST/SHOULD/WON'T, agent governance (proposal + confidence gate), and skill/agent index
+alwaysApply: true
+---
+
+# Constitution
+
+Hard limits for every task. Details: `playwright-conventions.mdc` (tests/**), `qa-orchestrator.mdc` (routing).
+
+## MUST
+
+| Rule | Why |
+|------|-----|
+| Role-based locators in POMs (`getByRole` / `getByLabel`); specs never inline | Stable, accessible selectors; one place to heal drift |
+| Web-first assertions (`expect(locator)...`); no `isVisible()` booleans | Retries until timeout; no race flake |
+| Auth via setup `storageState`; UI login only on login-page tests | Fast, isolated sessions |
+| Unique data (`uniqueName()` / timestamps) + self-cleanup (`trackProgram`) | No collisions or polluted env |
+| Exactly one tag per `test()`: `@smoke` / `@sanity` / `@regression` / `@api` / `@e2e` / `@destructive` (never on `describe`) | Precise CI filtering |
+| Audit then edit: Proposal (Scope, Confidence 1–10, Rationale, Unknowns) before any non-trivial change | Stops guessed paths, env vars, and copy |
+
+## SHOULD
+
+| Practice | When |
+|----------|------|
+| Faker factories for structured test data | Beyond simple unique strings |
+| Enums for repeated UI/API strings | Same label appears in 2+ places |
+| JSDoc on POM action methods | Non-obvious flows or parameters |
+
+## WON'T
+
+| Refuse | Route instead |
+|--------|---------------|
+| XPath or CSS locators | Fix accessible name/scope in POM |
+| `waitForTimeout` | Web-first `expect` on locator |
+| Hardcoded secrets / tokens | Env vars / CI secrets |
+| TypeScript `any` | Proper types or narrow `unknown` |
+| Weakened, deleted, or skipped assertions | Bug-reporter or human review |
+| Self-heal when triage says **app bug** | `bug-reporter`; heal drift only |
+| Tags on `describe` blocks | Tag individual `test()` with exactly one allowed tag |
+| `@destructive` on tests that only create/clean their own data | Keep `@smoke` / `@sanity` / `@regression` / `@api` / `@e2e` |
+| Invent a path, enum, env var, credential, or UI/API message | Ask the human, or explore the repo / live UI |
+
+## Agent governance
+
+Behavioral contract (not hook-enforced). Audit first; then propose; then edit.
+
+**Audit-then-edit:** Read the relevant files, tickets, or live UI before changing anything. Do not start a non-trivial edit on a guess.
+
+**Proposal (required before every non-trivial task):** emit this block, then wait for the gate:
+
+```
+## Proposal
+**Scope:** <what will change>
+**Confidence:** <1–10>
+**Rationale:** <why this approach>
+**Unknowns:** <missing paths, copy, env, AC, or behavior>
+```
+
+Trivial = typo, comment, or a change the user already specified byte-for-byte. Everything else is non-trivial.
+
+**Confidence gate:**
+
+| Score | Action |
+|-------|--------|
+| **< 5** | Do not proceed. Ask for the missing input. |
+| **5–7** | Proceed only with **Unknowns** listed **and** explicit human approval. |
+| **≥ 8** | Proceed. |
+
+Never invent a path, enum, env var, credential, or message — ask or explore instead.
+
+## Atlassian Rovo MCP
+
+When connected to `atlassian-rovo-mcp` (or plugin Atlassian MCP):
+
+- **MUST** use Jira project key = **DS**
+- **MUST** use `cloudId` = `https://legionqaschool.atlassian.net` (do **not** call `getAccessibleAtlassianResources`)
+- **MUST** use `maxResults: 10` or `limit: 10` for every Jira JQL and Confluence CQL search
+
+## Index
+
+**Skills:** `a11y-checks` (axe+keyboard) | `ci-failure-triage` (CI red -> bug vs drift) | `didaxis-bulk-cleanup` (API wipe programs) | `explore-and-generate` (no-ticket UI -> Gherkin) | `jira-bug-reporter` (failure -> Jira) | `jira-ticket-to-gherkin` (ticket -> Gherkin) | `network-mocked-edge-cases` (route 5xx/timeout) | `playwright-test-cleanup` (trackProgram) | `pom-conventions` (POM/locators) | `self-heal` (drift-only POM patch)
+
+**Agents:** `test-writer` (plan -> spec) | `triage` (red run -> classification) | `bug-reporter` (confirmed bug -> Jira)

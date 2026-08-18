@@ -52,7 +52,7 @@ Add (or keep) both in `tests/programs.a11y.spec.ts` (or equivalent):
 1. Axe scan of the Programs page with `.withTags(['wcag2a','wcag2aa'])`.
 2. Keyboard: tab → primary control focused → Enter → New Program dialog open.
 
-One tag per test. Drive all interaction through existing POMs.
+One tag per test (`@smoke` / `@sanity` / `@regression` / `@api` / `@e2e` / `@destructive`). Drive all interaction through existing POMs.
 
 ## Violations — never silence to go green
 
@@ -78,7 +78,7 @@ When axe finds real issues:
 - [ ] `AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()`
 - [ ] `await expect(results.violations).toEqual([])`
 - [ ] Keyboard path with `toBeFocused()` + Enter opens dialog (where applicable)
-- [ ] POMs only; one tag per test
+- [ ] POMs only; exactly one allowed tag per test
 - [ ] No `.disableRules()` — real violations reported and work stopped
 
 **Reviewing**
