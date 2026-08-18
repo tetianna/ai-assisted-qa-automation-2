@@ -16,7 +16,7 @@
     "codegen": "playwright codegen",
     "setup:browsers": "playwright install chromium",
     "postinstall": "playwright install chromium",
-    "eval-report": "node scripts/write-eval-report.mjs",
+    "eval-report": "node scripts/write-eval-report.mjs"
   },
   "repository": {
     "type": "git",
