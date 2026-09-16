@@ -1,60 +1,48 @@
 # Eval report
 
-Generated: 2026-08-17T22:26:00Z  
-Trigger: `local-orchestrator`  
-Window: last **10** CI runs (4 Playwright `test` jobs exist on PRs). Cursor has **no built-in telemetry** for these metrics.
+Generated: 2026-09-16T10:51:58.743Z  
+Trigger: `backlog-mode run; queue unfetchable, fell back to explore-and-generate`  
+Window: last **10** CI runs (when `gh` is authenticated). Cursor has **no built-in telemetry** for these metrics.
 
 ## Flake rate
 
-**Number:** **0** retry-only passes observed / **4** PR CI jobs (last-10 window; only 4 jobs exist)
+**Number:** 0 flaky mentions / 10 runs (last 10 completed)
 
-**How measured:** GitHub MCP `pull_request_read` / `get_check_runs` on PRs #1–#4 (the only PRs in the repo). Each has one completed job named `test`. Conclusions: #1 success, #2 failure, #3 success, #4 success. None are named `flaky`. Job-level API does **not** expose Playwright retries (`retries: 2` in CI). `gh run view --log` is still 401, so tests that passed only on retry cannot be counted.
+**How measured:** `gh run list` for Smoke / Sanity / Regression / E2E Tests / Test Generation (last 10 completed), then `gh run view <id> --log` counted Playwright `flaky` lines (passed only after retry). 
 
-**What it tells us:** CI looks stable at the job level, but true flake (pass-on-retry) is still invisible without logs or a JSON reporter.
+**What it tells us:** How often CI green is bought with retries rather than a first-pass pass.
 
 ## Heal success rate
 
-**Number:** **1/2** clean heals; **masked-regression = 1** (must be 0)
+**Number:** 2/2 clean heals; **masked-regression = 0** (must be 0)
 
-**How measured:** GitHub MCP PR/commit history plus git.
+**How measured:** `git log --all` for subjects matching self-heal / locator after drift / `fix(pom)`. A heal is **masked** if the same commit diffs `expect(` in `tests/**` or `TestCases/**`. POM-only locator diffs count as clean.
 
-| Heal | Evidence | Clean? |
-|------|----------|--------|
-| `ee27e89` Cancel button locator | `pages/NewProgramModal.ts` only (+1/−1); no spec `expect(` edits | Yes |
-| [PR #4](https://github.com/tetianna/ai-assisted-qa-automation-2/pull/4) `heal/ci-ds5-tc017-list-scan` | POM `querySelector` plus `test` → `test.fixme` on DS-2 TC-008 / TC-020 (DS-126, DS-106) | **No — masked** |
+**What it tells us:** Heals are not silencing product bugs by editing assertions.
 
-A heal is **masked** if it skips, fixmes, or edits `expect(` so a red test goes green without a locator-only POM fix.
-
-**What it tells us:** One real drift heal was clean; the CI “heal” PR hid failing assertions with `fixme` instead of healing locators or filing bugs only.
+- `a1c4104` fix(pom): batch-read program list names for CI scale
+- `ee27e89` fix(pom): correct New Program Cancel button locator after drift
 
 ## Generation-gate pass rate
 
-**Number:** **2/3** first-PR CI green with a DS ticket link
+**Number:** 0/3
 
-**How measured:** GitHub MCP listed `qa/*` PRs and their first `test` check:
+**How measured:** `gh pr list` for `qa/*` or label `tests-generated`, then first-check conclusions. Conforming = generation-gate rules (has `expect(`, no CSS/XPath `page.locator`). Maps-to-AC = PR links a DS ticket. Fallback without `gh`: count local `qa/DS-*` branches only.
 
-| PR | Ticket | First `test` check | Maps to AC |
-|----|--------|--------------------|------------|
-| [#3](https://github.com/tetianna/ai-assisted-qa-automation-2/pull/3) (merged) | DS-213 | success | Jira linked; body says **no formal AC** (scenarios from summary + UI) |
-| [#1](https://github.com/tetianna/ai-assisted-qa-automation-2/pull/1) (open) | DS-5 | success | Ticket in title |
-| [#2](https://github.com/tetianna/ai-assisted-qa-automation-2/pull/2) (open) | DS-212 | **failure** | Ticket in title |
-
-Conforming (has `expect(`, no CSS/XPath `page.locator`) was not re-scanned from CI logs this pass; the generation-gate hook is `.cursor/hooks/enforce-generation-gate.sh`.
-
-**What it tells us:** Most generated PRs go green on first CI, but DS-212 did not, and DS-213 was not mapped from formal AC.
+**What it tells us:** Whether test-writer output is shippable without a repair cycle.
 
 ## Ask vs guess
 
-**Number:** **0 asked / 0 guessed** (this refresh)
+**Number:** 2 asked / 1 guessed
 
-**How measured:** Session review of this orchestrator pass (no Cursor telemetry). Counts and classifications came from GitHub MCP (PR list, check runs, files, commit `ee27e89`). Previous chat had 3 asked / 6 guessed; that is not this run.
+**How measured:** .eval/session.json (session review; no Cursor telemetry). Not inferred from model traces.
 
-**What it tells us:** This report did not invent CI numbers. Earlier agent work still guessed tags and env names more than it asked.
+**What it tells us:** The agent preferred questions over invented values.
 
 ## Top reliability risk
 
-**Masked-regression is 1, not 0.** Heal [PR #4](https://github.com/tetianna/ai-assisted-qa-automation-2/pull/4) used `test.fixme` on failing cases. That is not a drift heal.
+Generated specs are not green+conforming on the first PR.
 
 ## Next action
 
-Do not merge heal PRs that skip or fixme assertions. File DS-126 / DS-106 as bugs; keep heals to POM locators only. Add a Playwright JSON reporter on CI so flake rate can use retries instead of job success/fail.
+Tighten test-writer + generation-gate; do not open the PR until the spec is green locally.
