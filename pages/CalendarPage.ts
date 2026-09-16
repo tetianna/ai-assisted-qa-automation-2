@@ -10,6 +10,13 @@ export class CalendarPage {
   readonly calendarHint: Locator;
   readonly selectSemesterPrompt: Locator;
   readonly semesterLoadHint: Locator;
+  readonly grid: Locator;
+  readonly newSessionButton: Locator;
+  readonly publishButton: Locator;
+  readonly todayButton: Locator;
+  /** Level-2 heading for the active calendar period (Week/Month/Day), not the page title. */
+  readonly periodHeading: Locator;
+  readonly sessionSummary: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { name: 'Calendar' });
@@ -20,6 +27,12 @@ export class CalendarPage {
     this.calendarHint = page.getByText('Use the dropdowns above to choose a program, then a semester');
     this.selectSemesterPrompt = page.getByText('Select a semester');
     this.semesterLoadHint = page.getByText('Choose a semester from the dropdown to load its sessions');
+    this.grid = page.getByRole('grid');
+    this.newSessionButton = page.getByRole('button', { name: '+ New Session' });
+    this.publishButton = page.getByRole('button', { name: 'Publish' });
+    this.todayButton = page.getByRole('button', { name: 'Today' });
+    this.periodHeading = page.getByRole('heading', { level: 2 }).filter({ hasNotText: 'Calendar' });
+    this.sessionSummary = page.getByText(/^\d+ sessions scheduled • \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}$/);
   }
 
   async goto() {
@@ -51,5 +64,14 @@ export class CalendarPage {
 
   viewButton(name: 'Month' | 'Week' | 'Day'): Locator {
     return this.page.getByRole('button', { name, exact: true });
+  }
+
+  /** Previous/Next period controls; label varies by view (e.g. "Previous Week", "Next Month"). */
+  navButton(name: string): Locator {
+    return this.page.getByRole('button', { name, exact: true });
+  }
+
+  async clickView(name: 'Month' | 'Week' | 'Day') {
+    await this.viewButton(name).click();
   }
 }
